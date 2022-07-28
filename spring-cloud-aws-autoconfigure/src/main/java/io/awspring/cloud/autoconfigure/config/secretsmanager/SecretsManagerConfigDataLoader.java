@@ -46,9 +46,10 @@ public class SecretsManagerConfigDataLoader implements ConfigDataLoader<SecretsM
 	@Nullable
 	public ConfigData load(ConfigDataLoaderContext context, SecretsManagerConfigDataResource resource) {
 		try {
+			SecretsManagerProperties secretsManagerProperties = context.getBootstrapContext().get(SecretsManagerProperties.class);
 			SecretsManagerClient sm = context.getBootstrapContext().get(SecretsManagerClient.class);
 			SecretsManagerPropertySource propertySource = resource.getPropertySources()
-					.createPropertySource(resource.getContext(), resource.isOptional(), sm);
+					.createPropertySource(resource.getContext(), secretsManagerProperties.getPrefix() ,resource.isOptional(), sm);
 			if (propertySource != null) {
 				return new ConfigData(Collections.singletonList(propertySource));
 			}

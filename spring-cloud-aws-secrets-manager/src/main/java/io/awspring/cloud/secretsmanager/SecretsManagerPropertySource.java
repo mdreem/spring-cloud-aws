@@ -48,11 +48,25 @@ public class SecretsManagerPropertySource extends EnumerablePropertySource<Secre
 
 	private final String context;
 
+	private final String keyPrefix;
+
 	private final Map<String, Object> properties = new LinkedHashMap<>();
 
 	public SecretsManagerPropertySource(String context, SecretsManagerClient smClient) {
+		this(context, null, smClient);
+	}
+
+	public SecretsManagerPropertySource(String context, @Nullable String prefix, SecretsManagerClient smClient) {
 		super(context, smClient);
 		this.context = context;
+		this.keyPrefix = getKeyPrefix(prefix) ;
+	}
+
+	private String getKeyPrefix(@Nullable String prefix) {
+		if (prefix == null) {
+			return "";
+		}
+		return context.replace(prefix, "").replaceFirst("^/", "").replace('/', '.') + ".";
 	}
 
 	/**
@@ -83,8 +97,9 @@ public class SecretsManagerPropertySource extends EnumerablePropertySource<Secre
 					});
 
 			for (Map.Entry<String, Object> secretEntry : secretMap.entrySet()) {
-				LOG.debug("Populating property retrieved from AWS Secrets Manager: " + secretEntry.getKey());
-				properties.put(secretEntry.getKey(), secretEntry.getValue());
+				String key = keyPrefix + secretEntry.getKey();
+				LOG.debug("Populating property retrieved from AWS Secrets Manager: " + key);
+				properties.put(key, secretEntry.getValue());
 			}
 		}
 		catch (JsonParseException e) {

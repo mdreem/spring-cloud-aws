@@ -36,19 +36,20 @@ public class SecretsManagerPropertySources {
 	/**
 	 * Creates property source for given context.
 	 * @param context property source context equivalent to the secret name
+	 * @param prefix prefix that is stripped from the path. Enables appending path to property key
 	 * @param optional if creating context should fail with exception if secret cannot be loaded
 	 * @param client Secret Manager client
 	 * @return a property source or null if secret could not be loaded and optional is set to true
 	 */
 	@Nullable
-	public SecretsManagerPropertySource createPropertySource(String context, boolean optional,
+	public SecretsManagerPropertySource createPropertySource(String context, @Nullable String prefix, boolean optional,
 			SecretsManagerClient client) {
 		Assert.notNull(context, "context is required");
 		Assert.notNull(client, "SecretsManagerClient is required");
 
 		LOG.info("Loading secrets from AWS Secret Manager secret with name: " + context + ", optional: " + optional);
 		try {
-			SecretsManagerPropertySource propertySource = new SecretsManagerPropertySource(context, client);
+			SecretsManagerPropertySource propertySource = new SecretsManagerPropertySource(context, prefix, client);
 			propertySource.init();
 			return propertySource;
 			// TODO: howto call close when /refresh

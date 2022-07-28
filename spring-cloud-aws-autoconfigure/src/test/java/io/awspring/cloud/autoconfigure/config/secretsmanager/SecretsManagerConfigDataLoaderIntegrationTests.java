@@ -73,6 +73,7 @@ class SecretsManagerConfigDataLoaderIntegrationTests {
 		createSecret(localstack, "/certs/dev/fn_certificate/", "=== my dev cert should be here", REGION);
 		createSecret(localstack, "fn_certificate", "=== my cert should be here", REGION);
 		createSecret(localstack, "/config/second", "{\"secondMessage\":\"second value from tests\"}", REGION);
+		createSecret(localstack, "/some/prefix/config/spring", "{\"message\":\"value from tests\", \"another-parameter\": \"another parameter value\"}", REGION);
 	}
 
 	@Test
@@ -86,6 +87,19 @@ class SecretsManagerConfigDataLoaderIntegrationTests {
 			assertThat(context.getEnvironment().getProperty("another-parameter")).isEqualTo("another parameter value");
 			assertThat(context.getEnvironment().getProperty("secondMessage")).isEqualTo("second value from tests");
 			assertThat(context.getEnvironment().getProperty("non-existing-parameter")).isNull();
+		}
+	}
+
+	@Test
+	void resolvesPropertyFromSecretsManagerWithPrefixDefined() {
+		SpringApplication application = new SpringApplication(App.class);
+		application.setWebApplicationType(WebApplicationType.NONE);
+
+		try (ConfigurableApplicationContext context = runApplicationWithPrefixConfig(application,
+			"aws-secretsmanager:/some/prefix/config/spring", "/some/prefix")) {
+			assertThat(context.getEnvironment().getProperty("config.spring.message")).isEqualTo("value from tests");
+			assertThat(context.getEnvironment().getProperty("config.spring.another-parameter")).isEqualTo("another parameter value");
+			assertThat(context.getEnvironment().getProperty("config.spring.non-existing-parameter")).isNull();
 		}
 	}
 
@@ -258,6 +272,16 @@ class SecretsManagerConfigDataLoaderIntegrationTests {
 				"--" + endpointProperty + "=" + localstack.getEndpointOverride(SECRETSMANAGER).toString(),
 				"--spring.cloud.aws.credentials.access-key=noop", "--spring.cloud.aws.credentials.secret-key=noop",
 				"--spring.cloud.aws.region.static=eu-west-1", "--logging.level.io.awspring.cloud.secretsmanager=debug");
+	}
+
+	private ConfigurableApplicationContext runApplicationWithPrefixConfig(SpringApplication application, String springConfigImport,
+														  String prefix) {
+		return application.run("--spring.config.import=" + springConfigImport,
+			"--spring.cloud.aws.secretsmanager.region=" + REGION,
+			"--spring.cloud.aws.secretsmanager.endpoint=" + localstack.getEndpointOverride(SECRETSMANAGER).toString(),
+			"--spring.cloud.aws.credentials.access-key=noop", "--spring.cloud.aws.credentials.secret-key=noop",
+			"--spring.cloud.aws.region.static=eu-west-1", "--logging.level.io.awspring.cloud.secretsmanager=debug",
+			"--spring.cloud.aws.secretsmanager.prefix=" + prefix);
 	}
 
 	private static void createSecret(LocalStackContainer localstack, String secretName, String parameterValue,

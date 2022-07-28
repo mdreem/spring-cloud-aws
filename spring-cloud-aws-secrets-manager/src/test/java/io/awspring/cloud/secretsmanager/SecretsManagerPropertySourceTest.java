@@ -36,7 +36,9 @@ class SecretsManagerPropertySourceTest {
 
 	private SecretsManagerClient client = mock(SecretsManagerClient.class);
 
-	private SecretsManagerPropertySource propertySource = new SecretsManagerPropertySource("/config/myservice", client);
+	private SecretsManagerPropertySource propertySource = new SecretsManagerPropertySource("/config/myservice", null, client);
+
+	private SecretsManagerPropertySource propertySourceWithPrefix = new SecretsManagerPropertySource("/some/prefix/config/myservice", "/some/prefix", client);
 
 	@Test
 	void shouldParseSecretValue() {
@@ -73,4 +75,17 @@ class SecretsManagerPropertySourceTest {
 		assertThatThrownBy(() -> propertySource.init()).isInstanceOf(ResourceNotFoundException.class);
 	}
 
+	@Test
+	void shouldParseSecretValueWithPrefix() {
+		GetSecretValueResponse secretValueResult = GetSecretValueResponse.builder()
+			.secretString("{\"key1\": \"value1\", \"key2\": \"value2\"}").build();
+
+		when(client.getSecretValue(any(GetSecretValueRequest.class))).thenReturn(secretValueResult);
+
+		propertySourceWithPrefix.init();
+
+		assertThat(propertySourceWithPrefix.getPropertyNames()).containsExactly("config.myservice.key1", "config.myservice.key2");
+		assertThat(propertySourceWithPrefix.getProperty("config.myservice.key1")).isEqualTo("value1");
+		assertThat(propertySourceWithPrefix.getProperty("config.myservice.key2")).isEqualTo("value2");
+	}
 }

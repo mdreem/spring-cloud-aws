@@ -17,6 +17,7 @@ package io.awspring.cloud.autoconfigure.config.secretsmanager;
 
 import io.awspring.cloud.autoconfigure.AwsClientProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.lang.Nullable;
 
 /**
  * Configuration properties for the AWS Secrets Manager integration. Mostly based on the Spring Cloud Consul
@@ -37,4 +38,15 @@ public class SecretsManagerProperties extends AwsClientProperties {
 	 */
 	public static final String CONFIG_PREFIX = "spring.cloud.aws.secretsmanager";
 
+	@Nullable
+	private String prefix;
+
+	@Nullable
+	public String getPrefix() {
+		return this.prefix;
+	}
+
+	public void setPrefix(@Nullable String prefix) {
+		this.prefix = prefix;
+	}
 }
